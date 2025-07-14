@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEE Free SDK Test - GitHub Pages</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #beefree-editor { width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 4px; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 6px; font-weight: bold; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .info { background: #e7f3ff; color: #004085; border: 1px solid #b3d7ff; }
+        h1 { color: #333; text-align: center; }
+        .environment { font-size: 14px; color: #666; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐝 BEE Free SDK Environment Test</h1>
+        <div class="environment">Testing BEE Free SDK initialization outside Replit environment</div>
+        <div id="status" class="status loading">Initializing BEE Free SDK test...</div>
+        <div id="environment-info" class="status info"></div>
+        <div id="beefree-editor"></div>
+    </div>
+
+    <script>
+        console.log('🐝 Starting BEE Free SDK test on GitHub Pages...');
+        
+        // Environment detection
+        const isReplit = window.location.hostname.includes('replit');
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isNetlify = window.location.hostname.includes('netlify');
+        const isVercel = window.location.hostname.includes('vercel');
+        
+        const envInfo = { 
+            isReplit, 
+            isGitHubPages,
+            isNetlify,
+            isVercel,
+            hostname: window.location.hostname,
+            userAgent: navigator.userAgent.substring(0, 100)
+        };
+        
+        console.log('🐝 Environment Detection:', envInfo);
+        
+        // Display environment info
+        document.getElementById('environment-info').innerHTML = `
+            <strong>Environment:</strong> ${isGitHubPages ? 'GitHub Pages' : isNetlify ? 'Netlify' : isVercel ? 'Vercel' : isReplit ? 'Replit' : 'Unknown'}<br>
+            <strong>Hostname:</strong> ${envInfo.hostname}<br>
+            <strong>Purpose:</strong> Testing if BEE Free SDK works outside Replit
+        `;
+
+        // Load BEE Free SDK
+        const script = document.createElement('script');
+        script.src = 'https://app-rsrc.getbee.io/plugin/BeePlugin.js';
+        
+        script.onload = async function() {
+            console.log('🐝 BEE Plugin script loaded successfully');
+            
+            try {
+                const statusDiv = document.getElementById('status');
+                statusDiv.textContent = 'BEE Free script loaded. Testing SDK initialization...';
+                
+                // Check if BeePlugin is available
+                if (typeof window.BeePlugin === 'undefined') {
+                    throw new Error('BeePlugin not found after script load');
+                }
+                
+                console.log('🐝 BeePlugin object available. Methods:', Object.keys(window.BeePlugin));
+                
+                // Test SDK initialization with timeout detection
+                statusDiv.textContent = 'Testing BEE Free SDK create() method...';
+                
+                const initPromise = new Promise((resolve, reject) => {
+                    try {
+                        console.log('🐝 Calling BeePlugin.create()...');
+                        window.BeePlugin.create('test-token-github', {
+                            uid: 'test-user-github',
+                            container: 'beefree-editor'
+                        }, function(instance) {
+                            console.log('🐝 SUCCESS: BeePlugin.create() callback fired!', instance);
+                            resolve({ success: true, instance });
+                        }, function(error) {
+                            console.log('🐝 ERROR CALLBACK: BeePlugin.create() error callback fired', error);
+                            resolve({ success: false, error: error });
+                        });
+                    } catch (e) {
+                        console.log('🐝 EXCEPTION: Error calling BeePlugin.create()', e);
+                        resolve({ success: false, error: e.message });
+                    }
+                });
+                
+                const timeoutPromise = new Promise((resolve) => {
+                    setTimeout(() => {
+                        console.log('🐝 TIMEOUT: BeePlugin.create() timed out after 15 seconds');
+                        resolve({ timeout: true });
+                    }, 15000);
+                });
+                
+                console.log('🐝 Racing initialization vs timeout...');
+                const result = await Promise.race([initPromise, timeoutPromise]);
+                
+                if (result.timeout) {
+                    // SDK hangs - same behavior as Replit
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = `
+                        <strong>❌ CRITICAL FINDING: BEE Free SDK TIMED OUT (15s)</strong><br>
+                        This proves the SDK has the SAME hanging behavior on GitHub Pages as it does in Replit!<br>
+                        <strong>Conclusion:</strong> This is NOT a Replit-specific issue - it's a broader SDK problem.<br>
+                        <strong>Environment:</strong> ${envInfo.hostname}
+                    `;
+                    console.log('🐝 CONCLUSION: BEE Free SDK has broader timeout issues, not Replit-specific');
+                } else {
+                    // SDK responded (even with error) - different behavior from Replit
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = `
+                        <strong>✅ SUCCESS: BEE Free SDK RESPONDED!</strong><br>
+                        The SDK ${result.success ? 'initialized successfully' : 'failed with authentication error (expected)'}.<br>
+                        <strong>Key Finding:</strong> SDK does NOT hang on GitHub Pages like it does in Replit!<br>
+                        <strong>Conclusion:</strong> Replit environment IS blocking BEE Free SDK initialization.<br>
+                        <strong>Environment:</strong> ${envInfo.hostname}
+                    `;
+                    console.log('🐝 CONCLUSION: BEE Free SDK works on GitHub Pages - Replit blocking confirmed!', result);
+                }
+                
+            } catch (error) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    <strong>❌ JavaScript Error:</strong> ${error.message}<br>
+                    <strong>Environment:</strong> ${envInfo.hostname}
+                `;
+                console.error('🐝 JavaScript Error:', error);
+            }
+        };
+        
+        script.onerror = function() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status error';
+            statusDiv.innerHTML = `
+                <strong>❌ Failed to load BEE Free SDK script</strong><br>
+                Script URL: https://app-rsrc.getbee.io/plugin/BeePlugin.js<br>
+                <strong>Environment:</strong> ${envInfo.hostname}
+            `;
+            console.error('🐝 Failed to load BEE Plugin script');
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
